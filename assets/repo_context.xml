@@ -1,0 +1,578 @@
+<file path="docker-compose.yaml">
+version: '3.8'
+services:
+  saicmysqldb:
+    image: mysql:8.0
+    container_name: mysql-container-saic
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: saic
+      MYSQL_USER: demo
+      MYSQL_PASSWORD: demopass
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network-saic-demo
+
+  saic-int-sb-demo-app:
+    build: .
+    container_name: saic-int-sb-demo-app
+    ports:
+      - "8085:8080"
+    depends_on:
+       saicmysqldb:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://saicmysqldb:3306/saic
+      SPRING_DATASOURCE_USERNAME: demo
+      SPRING_DATASOURCE_PASSWORD: demopass
+    networks:
+      - app-network-saic-demo
+
+networks:
+  app-network-saic-demo:
+
+</file>
+
+<file path="build.gradle">
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.3'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.asciidoctor.jvm.convert' version '3.3.2'
+}
+
+group = 'com.saic'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+
+ext {
+	set('snippetsDir', file("build/generated-snippets"))
+}
+
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8"
+	compileOnly 'org.projectlombok:lombok'
+	runtimeOnly 'com.mysql:mysql-connector-j'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	outputs.dir snippetsDir
+	useJUnitPlatform()
+	enabled = false
+}
+
+tasks.named('asciidoctor') {
+	inputs.dir snippetsDir
+	dependsOn test
+}
+
+
+</file>
+
+<file path="gradle.properties">
+org.gradle.caching=false
+</file>
+
+<file path="settings.gradle">
+rootProject.name = 'saic-sb-demo'
+
+</file>
+
+<file path="gradle/wrapper/gradle-wrapper.properties">
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.14.2-bin.zip
+networkTimeout=10000
+validateDistributionUrl=true
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+
+</file>
+
+<file path=".gradle/vcs-1/gc.properties">
+
+</file>
+
+<file path=".gradle/buildOutputCleanup/cache.properties">
+#Thu Jun 26 09:14:03 EDT 2025
+gradle.version=8.14.2
+
+</file>
+
+<file path=".gradle/8.14.2/gc.properties">
+
+</file>
+
+<file path="build/resources/main/application.properties">
+spring.application.name=int-saic
+
+## DataSource 
+spring.datasource.url=jdbc:mysql://saicmysqldb:3306/saic
+spring.datasource.username=demo
+spring.datasource.password=demopass
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+</file>
+
+<file path="src/test/java/com/saic/demo/IntSaicApplicationTests.java">
+package com.saic.demo;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class IntSaicApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}
+
+</file>
+
+<file path="src/main/resources/application.properties">
+spring.application.name=int-saic
+
+## DataSource 
+spring.datasource.url=jdbc:mysql://saicmysqldb:3306/saic
+spring.datasource.username=demo
+spring.datasource.password=demopass
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL8Dialect
+
+</file>
+
+<file path="src/main/java/com/saic/demo/IntSaicApplication.java">
+package com.saic.demo;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class IntSaicApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(IntSaicApplication.class, args);
+	}
+
+}
+
+</file>
+
+<file path="src/main/java/com/saic/demo/dto/DocDto.java">
+package com.saic.demo.dto;
+
+import com.saic.demo.model.Documentz;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor 
+public class DocDto {
+	
+	private Integer id;
+
+	@NotBlank(message = "Title is required")
+	private String title;
+
+	@NotNull(message = "Application ID is required")
+	private Integer applicationId;
+	
+    public DocDto(Documentz doc) {
+        this.id = doc.getId();
+        this.title = doc.getTitle();
+        this.applicationId = doc.getApplicationz().getId();
+    }
+}
+
+</file>
+
+<file path="src/main/java/com/saic/demo/dto/AppDto.java">
+package com.saic.demo.dto;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import com.saic.demo.model.Applicationz;
+import com.saic.demo.model.Documentz;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+public class AppDto {
+
+	private Integer id;
+
+	@NotBlank(message = "Title is required")
+	private String title;
+
+	private List<DocDto> documents;
+
+	/*
+	 * 3) Design/develop a set of URL(s) to perform the following tasks: a) Retrieve
+	 * all the documents for a given application identifier and sorted by document
+	 * identifier
+	 * 
+	 */
+
+	public AppDto(Applicationz app) {
+		this.id = app.getId();
+		this.title = app.getTitle();
+		this.documents = app.getDocumentzes().stream().sorted(Comparator.comparing(Documentz::getId).reversed())
+				.map(DocDto::new).collect(Collectors.toList());
+	}
+}
+
+</file>
+
+<file path="src/main/java/com/saic/demo/util/GlobalExceptionHandler.java">
+package com.saic.demo.util;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(err ->
+            errors.put(err.getField(), err.getDefaultMessage()));
+        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGeneric(Exception ex) { 
+        ex.printStackTrace();
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Internal server error: " + ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+
+</file>
+
+<file path="src/main/java/com/saic/demo/controller/DemoController.java">
+package com.saic.demo.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.saic.demo.dto.AppDto;
+import com.saic.demo.dto.DocDto;
+import com.saic.demo.model.Documentz;
+import com.saic.demo.service.ApplicationInfoBusinessService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping("/api")
+@Tag(name = "Applications", description = "Operations related to applications and documents")
+
+public class DemoController {
+
+	@Autowired
+	private ApplicationInfoBusinessService applicationInfoBusinessService;
+
+	@Operation(summary = "Get documents by application ID", description = "given an application identifier, find all the documents associated with that application sorted by document identifier;")
+	@GetMapping("docz/application/{appId}")
+	public List<Documentz> getDocsByAppId(@PathVariable(name = "appId") Integer appId) {
+		return applicationInfoBusinessService.getDocumentsByApplicationId(appId);
+	}
+
+	@PostMapping("docz")
+	public ResponseEntity<DocDto> createDocument(@Valid @RequestBody DocDto dto) {
+		Documentz savedDoc = applicationInfoBusinessService.createDocument(dto);
+		// return ResponseEntity.ok("Document created with id " + savedDoc.getId());
+		return ResponseEntity.ok(new DocDto(savedDoc));
+	}
+
+	@PostMapping("application")
+	public ResponseEntity<AppDto> createApplication(@Valid @RequestBody AppDto dto) {
+		AppDto savedApp = applicationInfoBusinessService.createApplicationWithDocs(dto);
+		return ResponseEntity.status(HttpStatus.CREATED).body(savedApp);
+	}
+
+	@Operation(summary = "Get application by ID", description = "Returns application and associated documents by ID")
+	@GetMapping("/application/{id}")
+	public ResponseEntity<AppDto> getApplication(
+			@Parameter(description = "ID of the application", required = true) @PathVariable(name = "id") Integer id) {
+		AppDto app = applicationInfoBusinessService.getApplicationById(id);
+		return ResponseEntity.ok(app);
+	}
+
+	@GetMapping("/applications")
+	public ResponseEntity<Iterable<AppDto>> getAllApplications() {
+		Iterable<AppDto> app = applicationInfoBusinessService.getAllApplications();
+		return ResponseEntity.ok(app);
+	}
+
+	/*
+	 * 
+	 * 3) Design/develop a set of URL(s) to perform the following tasks: b) Retrieve
+	 * the application title for a given document identifier that the document is
+	 * associated with
+	 */
+	@Operation(summary = "Get application title by Doc ID", description = "Returns application title for given document ID")
+	@GetMapping("docz/applicationTitle/{docId}")
+	public ResponseEntity<String> getApplicationTitleByDocId(
+			@Parameter(description = "ID of the application", required = true) @PathVariable(name = "docId") Integer docId) {
+		DocDto app = applicationInfoBusinessService.getApplicationTitleByDocId(docId);
+		return ResponseEntity.ok(app.getTitle());
+	}
+
+}
+
+</file>
+
+<file path="src/main/java/com/saic/demo/model/Applicationz.java">
+package com.saic.demo.model;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Data
+@NoArgsConstructor
+public class Applicationz {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
+	private Integer id;
+	private String title;
+
+	@OneToMany(mappedBy = "applicationz", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<Documentz> documentzes = new ArrayList<>();
+
+}
+
+</file>
+
+<file path="src/main/java/com/saic/demo/model/Documentz.java">
+package com.saic.demo.model;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Data
+@NoArgsConstructor
+public class Documentz {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
+	private Integer id;
+	private String title;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "applicationz_id")
+	@JsonBackReference
+	private Applicationz applicationz;
+}
+
+</file>
+
+<file path="src/main/java/com/saic/demo/service/ApplicationInfoBusinessService.java">
+package com.saic.demo.service;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.saic.demo.dto.AppDto;
+import com.saic.demo.dto.DocDto;
+import com.saic.demo.model.Applicationz;
+import com.saic.demo.model.Documentz;
+import com.saic.demo.repo.ApplicationRepository;
+import com.saic.demo.repo.DocumentRepository;
+
+@Service
+public class ApplicationInfoBusinessService {
+
+	@Autowired
+	private ApplicationRepository applicationRepository;
+
+	@Autowired
+	private DocumentRepository documentRepository;
+
+	/*
+	 * 
+	 * 2) Design/develop a business service layer (let's call it
+	 * "ApplicationInfoBusinessService") to perform the following tasks: a) given an
+	 * application identifier, find all the documents associated with that
+	 * application sorted by document identifier;
+	 * 
+	 */
+
+	public List<Documentz> getDocumentsByApplicationId(Integer documentId) {
+		return documentRepository.findByApplicationzIdOrderByIdDesc(documentId);
+		// return documentRepository.findByApplicationzId(documentId,
+		// Sort.by(Sort.Direction.DESC, "id"));
+		// return
+		// applicationRepository.findById(documentId).map(Applicationz::getDocumentzes).orElseThrow(()
+		// -> new RuntimeException("Application not found"));
+	}
+
+	public Documentz createDocument(DocDto dto) {
+		Applicationz application = applicationRepository.findById(dto.getApplicationId())
+				.orElseThrow(() -> new RuntimeException("Application not found with ID " + dto.getApplicationId()));
+
+		Documentz doc = new Documentz();
+		doc.setTitle(dto.getTitle());
+		doc.setApplicationz(application);
+
+		return documentRepository.save(doc);
+	}
+
+	public AppDto createApplicationWithDocs(AppDto dto) {
+		Applicationz appz = new Applicationz();
+		appz.setTitle(dto.getTitle());
+
+		List<Documentz> docs = dto.getDocuments().stream().map(d -> {
+			Documentz doc = new Documentz();
+			doc.setTitle(d.getTitle());
+			doc.setApplicationz(appz);
+			return doc;
+		}).toList();
+
+		appz.setDocumentzes(docs);
+
+		Applicationz saved = applicationRepository.save(appz);
+
+		return new AppDto(saved);
+	}
+
+	public AppDto getApplicationById(Integer id) {
+		Applicationz app = applicationRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Application not found with id: " + id));
+
+		return new AppDto(app);
+	}
+
+	public Iterable<AppDto> getAllApplications() {
+		List<Applicationz> apps = (List<Applicationz>) applicationRepository.findAll();
+		return apps.stream().map(AppDto::new).toList();
+	}
+
+	public DocDto getApplicationTitleByDocId(Integer docId) {
+		Documentz docz = documentRepository.findById(docId)
+				.orElseThrow(() -> new RuntimeException("Document not found with id: " + docId));
+
+		return new DocDto(docz);
+	}
+
+}
+
+</file>
+
+<file path="src/main/java/com/saic/demo/repo/DocumentRepository.java">
+package com.saic.demo.repo;
+
+import java.util.List;
+
+import org.springframework.data.domain.Sort;
+import org.springframework.data.repository.CrudRepository;
+
+import com.saic.demo.model.Documentz;
+
+public interface DocumentRepository extends CrudRepository<Documentz, Integer>{
+	List<Documentz> findByApplicationzId(Integer applicationzId, Sort sort); 
+	
+	List<Documentz> findByApplicationzIdOrderByIdDesc(Integer applicationzId);
+}
+
+</file>
+
+<file path="src/main/java/com/saic/demo/repo/ApplicationRepository.java">
+package com.saic.demo.repo;
+
+import org.springframework.data.repository.CrudRepository;
+
+import com.saic.demo.model.Applicationz; 
+
+public interface ApplicationRepository extends CrudRepository<Applicationz, Integer>{
+
+}
+
+</file>
