@@ -83,6 +83,11 @@ Perfect for:
 git clone https://github.com/rahuldongre-us/stack-lens.git
 cd stack-lens
 ```
+Before running code, set the environment variable GEMINI_API_KEY.
+
+* [Gemini Docs](https://ai.google.dev/gemini-api/docs)
+* [Set API Environment Variable](https://ai.google.dev/gemini-api/docs/api-key#set-api-env-var)
+
 
 Run the stack generator:
 
@@ -105,6 +110,12 @@ Sample output:
 
 * Tech Stack: [Tech Stack Sample](assets/response-gem-stack.md)
 * Architecture Diagram: ![Diagram Sample](assets/stack-lens-java-arch.drawio.svg)
+
+### Why Gemini Matters for Stack Lens
+
+Stack Lens aims to help developers better understand, explore, and query code repositories using language models. Integrating or referencing a powerful LLM like Gemini in your documentation helps communicate the underlying technology intent: leveraging state-of-the-art AI models to interpret and interact with code and natural language with high contextual understanding.
+
+Gemini’s family includes different performance tiers — from lightweight models to the most capable variants (e.g., Gemini 3 Pro, Gemini 2.5 Flash) — allowing tool builders to balance capability and cost.
 
 ---
 
